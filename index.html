@@ -46,6 +46,22 @@
     .btn-g { background: var(--rojo); }
     .btn-g:active { background: #7F0000; transform: scale(0.98); }
     .btn-register:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-corregir { width: 100%; padding: 13px; border-radius: var(--radius); border: 2px solid; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; background: none; margin-top: 10px; }
+    .btn-corregir-v { border-color: var(--verde); color: var(--verde); }
+    .btn-corregir-v:active { background: #E8F5E9; }
+    .btn-corregir-g { border-color: var(--rojo); color: var(--rojo); }
+    .btn-corregir-g:active { background: #FFEBEE; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+    .modal-overlay.visible { display: flex; }
+    .modal { background: white; border-radius: var(--radius); padding: 24px; width: 90%; max-width: 360px; }
+    .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .modal-title.verde { color: var(--verde); }
+    .modal-title.rojo { color: var(--rojo); }
+    .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+    .modal-btns button { flex: 1; padding: 13px; border-radius: var(--radius-sm); border: none; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; }
+    .modal-cancel { background: #F5F5F5; color: #6B7280; }
+    .modal-confirm-v { background: var(--verde); color: white; }
+    .modal-confirm-g { background: var(--rojo); color: white; }
     .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
     .stat-card { background: var(--card); border-radius: var(--radius-sm); padding: 16px; border: 1px solid var(--border); }
     .stat-card.full { grid-column: 1 / -1; }
@@ -107,6 +123,7 @@
         </div>
       </div>
       <button class="btn-register btn-v" id="btn-venta" onclick="registrarVenta()">Registrar venta</button>
+      <button class="btn-corregir btn-corregir-v" onclick="abrirCorreccion('venta')">⚠ Corregir venta cargada por error</button>
     </div>
 
     <!-- GASTOS -->
@@ -140,6 +157,7 @@
         </div>
       </div>
       <button class="btn-register btn-g" id="btn-gasto" onclick="registrarGasto()">Registrar gasto</button>
+      <button class="btn-corregir btn-corregir-g" onclick="abrirCorreccion('gasto')">⚠ Corregir gasto cargado por error</button>
     </div>
 
     <!-- RESUMEN -->
@@ -167,6 +185,55 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- MODAL CORRECCIÓN VENTA -->
+<div class="modal-overlay" id="modal-venta">
+  <div class="modal">
+    <div class="modal-title verde">⚠ Corregir venta</div>
+    <div class="amount-label">Importe a corregir</div>
+    <div class="amount-row" style="margin-bottom:0">
+      <span class="currency">$</span>
+      <input class="amount-input verde" type="number" inputmode="decimal" placeholder="0.00" id="input-corr-venta" min="0" step="0.01" />
+    </div>
+    <div style="font-size:12px;color:#6B7280;margin-top:8px">Se registrará un importe negativo que cancela el error</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="cerrarModal('venta')">Cancelar</button>
+      <button class="modal-confirm-v" onclick="confirmarCorreccion('venta')">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CORRECCIÓN GASTO -->
+<div class="modal-overlay" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-title rojo">⚠ Corregir gasto</div>
+    <div class="amount-label">Importe a corregir</div>
+    <div class="amount-row">
+      <span class="currency">$</span>
+      <input class="amount-input rojo" type="number" inputmode="decimal" placeholder="0.00" id="input-corr-gasto" min="0" step="0.01" />
+    </div>
+    <div class="field-group">
+      <div class="field-label">Categoría del gasto a corregir</div>
+      <select class="field-select" id="select-corr-cat">
+        <option>MERCADERIA</option>
+        <option>DESCARTABLES</option>
+        <option>ALQUILER</option>
+        <option>TRANSPORTE/FLETE</option>
+        <option>MANTENIMIENTO</option>
+        <option>IMPUESTOS</option>
+        <option>SUELDOS</option>
+        <option>DESPERDICIO</option>
+        <option>TRANSFERENCIA PIZZERÍA</option>
+        <option>OTRO</option>
+      </select>
+    </div>
+    <div style="font-size:12px;color:#6B7280;margin-top:-8px">Se registrará un importe negativo que cancela el error</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="cerrarModal('gasto')">Cancelar</button>
+      <button class="modal-confirm-g" onclick="confirmarCorreccion('gasto')">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKZ0E8hgEH1TX8O246Bxj9laX-ab72RFy9HIL5wiZzIAIwhUbdbZj-I3UEoGenRcMlAA/exec";
@@ -338,6 +405,38 @@ function actualizarResumen() {
 
 // Cargar resumen al iniciar
 actualizarResumen();
+
+function abrirCorreccion(tipo) {
+  document.getElementById('modal-' + tipo).classList.add('visible');
+}
+
+function cerrarModal(tipo) {
+  document.getElementById('modal-' + tipo).classList.remove('visible');
+  document.getElementById('input-corr-' + tipo).value = '';
+}
+
+async function confirmarCorreccion(tipo) {
+  const val = parseFloat(document.getElementById('input-corr-' + tipo).value);
+  if (!val || val <= 0) { toast('Ingresá un importe válido', true); return; }
+  const { fecha, hora, mes } = ahora();
+  const importeNeg = -Math.abs(val);
+
+  if (tipo === 'venta') {
+    const registro = { fecha, hora, importe: importeNeg, mes, ts: Date.now() };
+    guardarLocal('ventas', registro);
+    sincronizarSheets('VENTAS', [fecha, hora, importeNeg, mes]);
+    toast('✓ Corrección de venta registrada');
+  } else {
+    const cat = document.getElementById('select-corr-cat').value;
+    const registro = { fecha, hora, importe: importeNeg, categoria: cat, descripcion: 'CORRECCIÓN', mes, ts: Date.now() };
+    guardarLocal('gastos', registro);
+    sincronizarSheets('GASTOS', [fecha, hora, importeNeg, cat, 'CORRECCIÓN', mes]);
+    toast('✓ Corrección de gasto registrada');
+  }
+
+  cerrarModal(tipo);
+  actualizarResumen();
+}
 </script>
 </body>
 </html>
